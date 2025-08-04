@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# stop.sh – gracefully stop Fabric/vanilla server and tear down its Screen session
+
+SESSION="minecraft"                 # ← name you used with  screen -dmS minecraft …
+JAR="fabric-server-launch.jar"       # or minecraft_server.1.21.8.jar
+
+# 1) Tell the server to shut down cleanly
+if screen -list | grep -q "\.${SESSION}[[:space:]]"; then
+    echo "→ Sending \`stop\` to $SESSION …"
+    screen -S "$SESSION" -p 0 -X stuff "stop$(printf '\r')"   # newline is mandatory :contentReference[oaicite:0]{index=0}
+else
+    echo "⚠ No Screen session called $SESSION – nothing to stop."
+    exit 0
+fi
+
+# 2) Give it up to 20 s to save chunks and exit
+for i in {1..20}; do
+    sleep 1
+    pgrep -f "$JAR" >/dev/null || break
+done
+
+# 3) Close the Screen session itself
+screen -S "$SESSION" -X quit                                    # ends the window & session :contentReference[oaicite:1]{index=1}
+
+# 4) Hard-kill anything still hanging around (rare)
+pkill -9 -f "$JAR" 2>/dev/null || true                          # cleaner than ps | pgrep | kill -9 :contentReference[oaicite:2]{index=2}
+echo "✓ Minecraft server stopped and Screen session closed."
